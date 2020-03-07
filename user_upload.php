@@ -9,7 +9,6 @@ try {
     
     // Define the flag "--file" CSV filename
     $cmd->option('file')
-        ->require()
         ->describedAs('This is the name of CSV file to be parsed.');
 
     // Define the flag "-u" PostgreSQL username
@@ -29,6 +28,11 @@ try {
         ->aka('host')
         ->describedAs('This is the PostgreSQL host.')
         ->default('127.0.0.1');
+    
+    // Define the flag "--create_table" directive
+    $cmd->option('create_table')
+        ->describedAs('This will cause the PostgreSQL users table to be built (and no further action will be taken).')
+        ->boolean();
 
     //setup postgresql connection variables
     $host = "host={$cmd['h']}";
@@ -38,6 +42,7 @@ try {
 
     //var_dump($host);
     //var_dump($credentials);
+    //var_dump($cmd['create_table']);
 
     //connect to PostgreSQL database
     $db_connection = pg_connect("$host $port $dbname $credentials");
@@ -48,10 +53,36 @@ try {
         echo "Connected to database successfully!\n";
     }
 
-    pg_query($db_connection, "DELETE FROM users"); //for testing purpose so that script can run again without errors
+    $result = pg_query($db_connection, "DELETE FROM users"); //for testing purpose so that script can run again without errors
+
+    //check if --create_table flag is passed. If yes, just create users table and exit program.
+    if ($cmd['create_table']) {
+        $result = pg_query($db_connection, "DROP TABLE users"); //only for testing purpose so that script can run again without errors
+
+        $result = pg_query($db_connection, "CREATE TABLE users(
+            name VARCHAR (50) NOT NULL,
+            surname VARCHAR (50) NOT NULL,
+            email VARCHAR (355) UNIQUE NOT NULL
+         )");
+
+        if (!$result) {
+            throw new Exception("Unable to create users table\n");
+        } else {
+            //if users table is created successfully, EXIT execution
+            exit("Table users created successfully!\n");
+        }
+    }
+
+    //check if --file command line option is provided. If yes, store in a variable, else throw error
+    if ($cmd['file'] !== null) {
+        $filename = $cmd['file'];
+    }
+    else {
+        throw new Exception("--file [csv file name] option not provided. Run the script again providing the CSV file name to be parsed!", 1);
+    }
     
     // Open the CSV file passed as argument for reading and print line by line
-    if (($h = fopen("{$cmd['file']}", "r")) !== FALSE) {
+    if (($h = fopen("{$filename}", "r")) !== FALSE) {
     
         while (($data = fgetcsv($h, 1000, ",")) !== FALSE) 
         {		
