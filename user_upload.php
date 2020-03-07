@@ -1,18 +1,17 @@
 <?php
-//testing command line arguments using 'getopt' function
-
-$shortopts = "u:p:h:";
-$longopts = array("file:", "create_table", "dry_run");
-
-$options = getopt($shortopts, $longopts);
-var_dump($options);
-//print_r($options);
-
+//Install and load 'Commando' - An Elegant PHP CLI Library
+//This library makes it easier to deal with CLI arguments
 try {
-    //check if '--file' argument is passed. If not, throw error.
-    if (!isset($options['file'])) {
-        throw new Exception("--file option not passed. This is required!\nUse the --file option to pass the name of CSV file to be processed.");
-    }
+    require_once 'vendor/autoload.php';
+
+    $cmd = new Commando\Command();
+    $cmd->beepOnError();
+    
+    // Define a flag "-f" a.k.a. "--file"
+    $cmd->option('f')
+        ->aka('file')
+        ->require()
+        ->describedAs('This is the name of CSV file to be parsed.');
 
     //setup postgresql connection variables
     $host = "host=127.0.0.1";
@@ -32,7 +31,7 @@ try {
     pg_query($db_connection, "DELETE FROM users"); //for testing purpose so that script can run again without errors
     
     // Open the CSV file passed as argument for reading and print line by line
-    if (($h = fopen("{$options['file']}", "r")) !== FALSE) {
+    if (($h = fopen("{$cmd['file']}", "r")) !== FALSE) {
     
         while (($data = fgetcsv($h, 1000, ",")) !== FALSE) 
         {		
