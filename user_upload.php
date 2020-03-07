@@ -33,12 +33,17 @@ try {
         {		
             if ($data[0] !== null && $data[0] !== "name") { //check if data exits and not the first record which is "name, surname, email"
                 //Read the data from a single line
-                //store record in variables and trim white spaces and escaping special characters like quotes
-                $name = pg_escape_literal(trim($data[0]));
-                $surname = pg_escape_literal(trim($data[1]));
-                $email = pg_escape_literal(trim($data[2]));
+                //store record in variables and trim white spaces, convert to lowercase and capitalize Name and Surname.
+                $name = ucfirst(strtolower(trim($data[0])));
+                $surname = ucfirst(strtolower(trim($data[1])));
+                $email = strtolower(trim($data[2]));
 
-                echo "$name $surname $email \n";
+                //Escape special characters like quotes before inserting into database
+                $name = pg_escape_literal($name);
+                $surname = pg_escape_literal($surname);
+                $email = pg_escape_literal($email);
+
+                echo "$name $surname $email \n"; //print on screen for testing and debugging purpose
 
                 //INSERT record into database
                 $result = pg_query($db_connection, "INSERT INTO users (name, surname, email) VALUES ({$name}, {$surname}, {$email})");
