@@ -9,6 +9,11 @@ var_dump($options);
 //print_r($options);
 
 try {
+    //check if '--file' argument is passed. If not, throw error.
+    if (!isset($options['file'])) {
+        throw new Exception("--file option not passed. This is required!\nUse the --file option to pass the name of CSV file to be processed.");
+    }
+
     //setup postgresql connection variables
     $host = "host=127.0.0.1";
     $port = "port=5432";
