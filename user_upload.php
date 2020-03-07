@@ -38,6 +38,15 @@ try {
                 $surname = ucfirst(strtolower(trim($data[1])));
                 $email = strtolower(trim($data[2]));
 
+                //Remove all illegal characters from email 
+                $email = filter_var($email, FILTER_SANITIZE_EMAIL); 
+                
+                //Validate Email. if not valid, show error message on STDOUT (screen) and skip inserting into DB 
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { 
+                    echo("Error: $email is NOT a valid email address. Record not inserted into database!\n");
+                    continue;
+                }  
+
                 //Escape special characters like quotes before inserting into database
                 $name = pg_escape_literal($name);
                 $surname = pg_escape_literal($surname);
