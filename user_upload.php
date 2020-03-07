@@ -7,19 +7,39 @@ try {
     $cmd = new Commando\Command();
     $cmd->beepOnError();
     
-    // Define a flag "-f" a.k.a. "--file"
-    $cmd->option('f')
-        ->aka('file')
+    // Define the flag "--file" CSV filename
+    $cmd->option('file')
         ->require()
         ->describedAs('This is the name of CSV file to be parsed.');
 
+    // Define the flag "-u" PostgreSQL username
+    $cmd->option('u')
+        ->aka('username')
+        ->describedAs('This is the PostgreSQL username.')
+        ->default('postgres');
+    
+    // Define the flag "-p" PostgreSQL password
+    $cmd->option('p')
+    ->aka('password')
+    ->describedAs('This is the PostgreSQL password.')
+    ->default('admin');
+
+    // Define the flag "-h" PostgreSQL host
+    $cmd->option('h')
+        ->aka('host')
+        ->describedAs('This is the PostgreSQL host.')
+        ->default('127.0.0.1');
+
     //setup postgresql connection variables
-    $host = "host=127.0.0.1";
+    $host = "host={$cmd['h']}";
     $port = "port=5432";
     $dbname = "dbname=userdb";
-    $credentials = "user=postgres password=admin";
+    $credentials = "user={$cmd['u']} password={$cmd['p']}";
 
-    //connect to postgresql database
+    //var_dump($host);
+    //var_dump($credentials);
+
+    //connect to PostgreSQL database
     $db_connection = pg_connect("$host $port $dbname $credentials");
     
     if (!$db_connection) {
@@ -65,7 +85,9 @@ try {
         }
         // Close the file
         fclose($h);
-    } 
+    }
+    //close Database connection
+    pg_close($db_connection); 
 }
 
 //catch exception
