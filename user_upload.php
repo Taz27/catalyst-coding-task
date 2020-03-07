@@ -33,6 +33,12 @@ try {
     $cmd->option('create_table')
         ->describedAs('This will cause the PostgreSQL users table to be built (and no further action will be taken).')
         ->boolean();
+    
+    // Define the flag "--dry_run" directive
+    $cmd->option('dry_run')
+        ->needs('file')
+        ->describedAs('This will be used with the --file directive in case we want to run the script but not insert into the DB. All other functions will be executed, but the database won\'t be altered.')
+        ->boolean();
 
     //setup postgresql connection variables
     $host = "host={$cmd['h']}";
@@ -49,8 +55,6 @@ try {
     
     if (!$db_connection) {
         throw new Exception("Unable to connect to database\n");
-    } else {
-        echo "Connected to database successfully!\n";
     }
 
     $result = pg_query($db_connection, "DELETE FROM users"); //for testing purpose so that script can run again without errors
@@ -98,7 +102,7 @@ try {
                 
                 //Validate Email. if not valid, show error message on STDOUT (screen) and skip inserting into DB 
                 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { 
-                    echo("Error: $email is NOT a valid email address. Record not inserted into database!\n");
+                    echo("Error: $email is NOT a valid email address. Record will not be inserted into database!\n");
                     continue;
                 }  
 
@@ -109,8 +113,11 @@ try {
 
                 echo "$name $surname $email \n"; //print on screen for testing and debugging purpose
 
-                //INSERT record into database
-                $result = pg_query($db_connection, "INSERT INTO users (name, surname, email) VALUES ({$name}, {$surname}, {$email})");
+                //check if --dry_run command line directive is provided, If yes, skip inserting record into database
+                if (!$cmd['dry_run']) {
+                    //INSERT record into database
+                    $result = pg_query($db_connection, "INSERT INTO users (name, surname, email) VALUES ({$name}, {$surname}, {$email})");
+                }
             }
             
         }
