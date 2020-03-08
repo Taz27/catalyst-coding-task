@@ -15,19 +15,19 @@ try {
     $cmd->option('u')
         ->aka('username')
         ->describedAs('This is the PostgreSQL username.')
-        ->default('postgres');
+        ->default('postgres'); //set default username, in case no -u option is passed
     
     // Define the flag "-p" PostgreSQL password
     $cmd->option('p')
     ->aka('password')
     ->describedAs('This is the PostgreSQL password.')
-    ->default('admin');
+    ->default('admin'); //set default password, in case no -p option is passed
 
     // Define the flag "-h" PostgreSQL host
     $cmd->option('h')
         ->aka('host')
         ->describedAs('This is the PostgreSQL host.')
-        ->default('127.0.0.1');
+        ->default('127.0.0.1'); //set default hostname, in case no -h option is passed
     
     // Define the flag "--create_table" directive
     $cmd->option('create_table')
@@ -111,11 +111,10 @@ try {
                 $surname = pg_escape_literal($surname);
                 $email = pg_escape_literal($email);
 
-                echo "$name $surname $email \n"; //print on screen for testing and debugging purpose
-
                 //check if --dry_run command line directive is provided, If yes, skip inserting record into database
                 if (!$cmd['dry_run']) {
                     //INSERT record into database
+                    echo "Inserting record $name $surname $email into database!\n";
                     $result = pg_query($db_connection, "INSERT INTO users (name, surname, email) VALUES ({$name}, {$surname}, {$email})");
                 }
             }
@@ -124,7 +123,13 @@ try {
         // Close the file
         fclose($h);
     }
-    //close Database connection
+    //If --dry_run command line directive is provided, show message on STDOUT that dry run is complete
+    if ($cmd['dry_run']) {
+        //display message on screen
+        echo "...dry run is complete! Database is not altered.";
+    }
+
+    //close PostgreSQL Database connection
     pg_close($db_connection); 
 }
 
