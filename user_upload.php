@@ -33,7 +33,7 @@ try {
 
         //Define the flag "--create_table" directive
         $cmd->option('create_table')
-            ->describedAs('This will cause the PostgreSQL users table to be built (and no further action will be taken).')
+            ->describedAs('This will cause the PostgreSQL users table to be created/rebuilt if exists (and no further action will be taken).')
             ->boolean();
 
         //Define the flag "--dry_run" directive
@@ -60,6 +60,12 @@ try {
         return $conn;
     }
 
+    function doesUsersTableExists($conn) {
+        //Function to check if the table 'users' already exists in database.
+        $result = pg_query($conn, "SELECT EXISTS (SELECT relname FROM pg_class WHERE relname = 'users')");
+        return pg_fetch_result($result, 0); //this will return "t" if query returned true (users table exists) or "f" if false
+    }
+
     //execute the defineCommandOptions function by passing the $cmd object
     defineCommandOptions($cmd);
 
@@ -68,6 +74,11 @@ try {
 
     //check if --create_table flag is passed. If yes, just create users table and exit program
     if ($cmd['create_table']) {
+        //First check if 'users' table already exists. If yes, DROP it then Rebuild
+        if (doesUsersTableExists($db_connection) === "t") {
+            echo "\n...rebuilding table.";
+            pg_query($db_connection, "DROP TABLE users");
+        }
 
         $result = pg_query($db_connection, "CREATE TABLE users(
             name VARCHAR (50) NOT NULL,
@@ -79,7 +90,7 @@ try {
             throw new Exception("Unable to create users table.\n");
         } else {
             //if users table is created successfully, EXIT execution
-            exit("Table users created successfully!\n");
+            exit("\nTable 'users' created successfully!\n");
         }
     }
 
@@ -88,12 +99,10 @@ try {
         $filename = $cmd['file'];
 
         //Before going further, check if the table 'users' exists in database.
-        $result = pg_query($db_connection, "SELECT EXISTS (SELECT relname FROM pg_class WHERE relname = 'users')");
-        $doesTableExist = pg_fetch_result($result, 0); //this will return "t" if query returned true (users table exists) or "f" if false
         
         //If 'users' table does not exist AND --dry_run command line option is not passed, throw error.
         //If --dry_run option is passed, it does not matter if 'users' table exist or not since no INSERT will be made. So we can go ahead.
-        if ($doesTableExist === "f" && !$cmd['dry_run']) {
+        if (doesUsersTableExists($db_connection) === "f" && !$cmd['dry_run']) {
             throw new Exception("Table 'users' does not exist. Run the script again passing the --create_table directive.", 1);
         }
     }
@@ -118,7 +127,7 @@ try {
                 
                 //Validate Email. if not valid, show error message on STDOUT (screen) and skip inserting into DB 
                 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { 
-                    echo("Error: $email is NOT a valid email address. Record will not be inserted into database!\n");
+                    echo("\nError: $email is NOT a valid email address of user: $name $surname. Record will not be inserted into database!\n");
                     continue;
                 }  
 
@@ -130,7 +139,7 @@ try {
                 //check if --dry_run command line directive is provided, If yes, skip inserting record into database
                 if (!$cmd['dry_run']) {
                     //INSERT record into database
-                    echo "Inserting record $name $surname $email into database!\n";
+                    echo "\nInserting record $name $surname $email into database!\n";
                     $result = pg_query($db_connection, "INSERT INTO users (name, surname, email) VALUES ({$name}, {$surname}, {$email})");
                 }
             }
@@ -142,7 +151,7 @@ try {
     //If --dry_run command line directive is provided, show message on STDOUT that dry run is complete
     if ($cmd['dry_run']) {
         //display message on screen
-        echo "...dry run is complete! Database is not altered.";
+        echo "\n...dry run is complete! Database is not altered.";
     }
 
     //close PostgreSQL Database connection
@@ -151,7 +160,7 @@ try {
 
 //catch exception
 catch(Exception $e) {
-  echo 'Error Message: ' .$e->getMessage();
+  echo "\nError Message: " .$e->getMessage();
 }
 
 
